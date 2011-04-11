@@ -5,6 +5,7 @@
 #include <fstream>
 #include <mpi.h>
 #include <sys/time.h>
+#include <stdint.h>
 #include "tvUtil.h"
 
 using namespace std;
@@ -30,7 +31,7 @@ int main(int argc, char **argv){
   unsigned myCols = cols / numProcs;
   unsigned colStart = id * myCols;
   unsigned colEnd = colStart + myCols;
-  long offset = id * colStart * rows * sizeof(double);
+  uint64_t offset = id * colStart * rows * sizeof(double);
   
   // just read one column at a time (assume column-major)
   struct timeval tStart, tEnd;
