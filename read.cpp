@@ -68,6 +68,8 @@ int main(int argc, char **argv){
   if(!id){
     cout << "mean: " << meanTime << "s, " 
 	 << MBPS(myCols * rows * sizeof(double), meanTime) << " MBPS"
+	 << " (" << MBPS(cols * rows * sizeof(double), meanTime)
+	 << " MBPS aggregate)"
 	 << endl << "min : " << minTime << "s, "
 	 << MBPS(myCols * rows * sizeof(double), minTime) << " MBPS"
 	 << endl << "max : " << maxTime << "s, "
