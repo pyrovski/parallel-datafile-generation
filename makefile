@@ -4,5 +4,5 @@ all: $(targets)
 clean:
 	rm -f *.~ $(targets) *.o
 
-read: read.cpp
+read: read.cpp tvUtil.cpp
 	mpic++ -o $@ $^ 

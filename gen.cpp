@@ -3,6 +3,9 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+//#include <lustre/liblustreapi.h>
+//#include <lustre/lustre_user.h>
+//int llapi_file_create(char *name, long stripe_size, int stripe_offset, int stripe_count, int stripe_pattern);
 
 using namespace std;
 int main(int argc, const char **argv){
