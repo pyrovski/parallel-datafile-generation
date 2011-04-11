@@ -6,3 +6,6 @@ clean:
 
 read: read.cpp tvUtil.cpp
 	mpic++ -o $@ $^ 
+
+gen: gen.cpp
+	mpic++ -o $@ $^ -g

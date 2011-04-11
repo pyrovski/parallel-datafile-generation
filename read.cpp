@@ -15,7 +15,6 @@ double MBPS(unsigned long bytes, double seconds){
 }
 
 int main(int argc, char **argv){
-  int retVal;
   MPI_Init(&argc, &argv);
   if(argc < 2){
     cout << "usage: " << argv[0] << " <input file> <rows> <colums>" << endl;
@@ -31,17 +30,31 @@ int main(int argc, char **argv){
   unsigned myCols = cols / numProcs;
   unsigned colStart = id * myCols;
   unsigned colEnd = colStart + myCols;
-  uint64_t offset = id * colStart * rows * sizeof(double);
+  uint64_t offset = colStart * rows * sizeof(double);
   
   // just read one column at a time (assume column-major)
   struct timeval tStart, tEnd;
   gettimeofday(&tStart, 0);
   FILE *file = fopen(argv[1], "r");
-  //cout << "seeking to " << offset << endl;
-  int status = fseek(file, offset, SEEK_SET);
+  //cout << "id " << id << " seeking to " << offset << endl;
+  int status = fseeko(file, offset, SEEK_SET);
+  if(status){
+    perror("fseek");
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  if(ftello(file) != offset || feof(file)){
+    cout << "seek failed" << endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
   double *array = (double*)malloc(rows * sizeof(double));
   for(unsigned col = colStart; col < colEnd; col++){
-    fread(array, sizeof(double), rows, file);
+    if(fread(array, sizeof(double), rows, file) != rows)
+    {
+      cout << "read failed on id " << id << endl;
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
   }
   fclose(file);
   gettimeofday(&tEnd, 0);
