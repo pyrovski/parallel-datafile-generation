@@ -4,6 +4,7 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <fcntl.h>
 #include <lustre/liblustreapi.h>
 #include <lustre/lustre_user.h>
 
@@ -27,11 +28,27 @@ int main(int argc, const char **argv){
   rows = atoi(argv[1]);
   cols = atoi(argv[2]);
   file = fopen(argv[3], "w");
-  if(!file)
+  if(!file){
+    cout << "open failed" << endl;
     return 1;
-  for(uint64_t i = 0; i < rows * cols; i++){
-    double element = drand48();
-    fwrite(&element, sizeof(double), 1, file);
   }
+  if(ftruncate(fileno(file), rows * cols * sizeof(double))){
+    cout << "truncate failed" << endl;
+    return 1;
+  }
+  long flags = fcntl(fileno(file), F_GETFL);
+  if(fcntl(fileno(file), F_SETFL, flags | O_NONBLOCK)){
+    cout << "fcntl failed" << endl;
+    return 1;
+  }
+  // assume column-major
+  double *array = (double*)malloc(rows * sizeof(double));
+  for(uint64_t col = 0; col < cols; col++){
+    for(uint64_t row = 0; row < rows; row++){
+      array[row] = drand48();
+    }
+    fwrite(array, sizeof(double), rows, file);
+  }
+  fsync(fileno(file));
   return fclose(file);
 }
