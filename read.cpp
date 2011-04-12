@@ -66,13 +66,13 @@ int main(int argc, char **argv){
   MPI_Reduce(&myTime, &minTime, 1, MPI_DOUBLE, MPI_MIN, 0, MPI_COMM_WORLD);
   MPI_Reduce(&myTime, &maxTime, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
   if(!id){
-    cout << "mean: " << meanTime << "s, " 
+    cout << "mean time: " << meanTime << "s, " 
 	 << MBPS(myCols * rows * sizeof(double), meanTime) << " MBPS"
 	 << " (" << MBPS(cols * rows * sizeof(double), meanTime)
 	 << " MBPS aggregate)"
-	 << endl << "min : " << minTime << "s, "
+	 << endl << "min time:  " << minTime << "s, "
 	 << MBPS(myCols * rows * sizeof(double), minTime) << " MBPS"
-	 << endl << "max : " << maxTime << "s, "
+	 << endl << "max time:  " << maxTime << "s, "
 	 << MBPS(myCols * rows * sizeof(double), maxTime) << " MBPS"
 	 << endl;
   }
