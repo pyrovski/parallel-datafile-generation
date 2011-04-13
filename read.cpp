@@ -10,7 +10,7 @@
 
 using namespace std;
 
-double MBPS(unsigned long bytes, double seconds){
+double MBPS(uint64_t long bytes, double seconds){
   return bytes / 1024.0 / 1024.0 / seconds;
 }
 
@@ -25,14 +25,14 @@ int main(int argc, char **argv){
   int id, numProcs;
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
-  unsigned rows = atoi(argv[2]);
-  unsigned cols = atoi(argv[3]);
-  unsigned myCols = cols / numProcs;
-  unsigned colStart = id * myCols;
-  unsigned colEnd = colStart + myCols;
+  uint64_t rows = atoi(argv[2]);
+  uint64_t cols = atoi(argv[3]);
+  uint64_t myCols = cols / numProcs;
+  uint64_t colStart = id * myCols;
+  uint64_t colEnd = colStart + myCols;
   uint64_t offset = colStart * rows * sizeof(double);
   // for 5000-element double columns, this is 4 MB, (not MiB)
-  unsigned colInc = 100;
+  uint64_t colInc = 100;
   
   // just read one column at a time (assume column-major)
   struct timeval tStart, tEnd;
@@ -52,7 +52,7 @@ int main(int argc, char **argv){
 
   double *array = (double*)malloc(rows * colInc * sizeof(double));
   //cout << "id " << id << " reading " << colInc << " colums" << endl;
-  for(unsigned col = colStart; col < colEnd; col += colInc){
+  for(uint64_t col = colStart; col < colEnd; col += colInc){
     size_t fstatus = fread(array, sizeof(double), rows * colInc, file);
     if(fstatus != rows * colInc)
     {
