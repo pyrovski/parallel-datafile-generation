@@ -17,6 +17,7 @@
 
 using namespace std;
 int main(int argc, char **argv){
+  int status;
   MPI_Init(&argc, &argv);
 
   uint64_t rows = 0, cols = 0;
@@ -30,6 +31,12 @@ int main(int argc, char **argv){
   int id, numProcs;
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
+
+  status = llapi_file_create(argv[3], 
+			     (int)(32 * 1024 * 1024) / (int)getpagesize(),
+			     -1,
+			     0,
+			     0);
 
   file = fopen(argv[3], "w");
   if(!file){
@@ -56,7 +63,7 @@ int main(int argc, char **argv){
   uint64_t colInc = 100;
   //cout << "seeking to " << offset << endl;
 
-  int status = fseeko(file, offset, SEEK_SET);
+  status = fseeko(file, offset, SEEK_SET);
   if(status){
     perror("fseek");
     MPI_Abort(MPI_COMM_WORLD, 1);
