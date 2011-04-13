@@ -31,6 +31,8 @@ int main(int argc, char **argv){
   unsigned colStart = id * myCols;
   unsigned colEnd = colStart + myCols;
   uint64_t offset = colStart * rows * sizeof(double);
+  // for 5000-element double columns, this is 4 MB, (not MiB)
+  unsigned colInc = 100;
   
   // just read one column at a time (assume column-major)
   struct timeval tStart, tEnd;
@@ -48,11 +50,18 @@ int main(int argc, char **argv){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  double *array = (double*)malloc(rows * sizeof(double));
-  for(unsigned col = colStart; col < colEnd; col++){
-    if(fread(array, sizeof(double), rows, file) != rows)
+  double *array = (double*)malloc(rows * colInc * sizeof(double));
+  //cout << "id " << id << " reading " << colInc << " colums" << endl;
+  for(unsigned col = colStart; col < colEnd; col += colInc){
+    size_t fstatus = fread(array, sizeof(double), rows * colInc, file);
+    if(fstatus != rows * colInc)
     {
       cout << "read failed on id " << id << endl;
+      if(feof(file))
+	cout << id << " end of file" << endl;
+      else if(ferror(file)){
+	cout << id << " " << ferror(file) << endl;
+      }
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
   }
