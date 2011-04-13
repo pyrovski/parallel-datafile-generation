@@ -66,10 +66,15 @@ int main(int argc, char **argv){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  //cout << "id " << id << " writing " << myCols << " cols." << endl;
+  cout << "id " << id << " writing " << myCols << " cols." << endl;
 
   // assume column-major
   double *array = (double*)malloc(rows * colInc * sizeof(double));
+  if(!array){
+    cout << "malloc error" << endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
   for(uint64_t col = colStart; col < colEnd; col += colInc){
     for(uint64_t colSub = 0; colSub < colInc; colSub++)
       for(uint64_t row = 0; row < rows; row++)

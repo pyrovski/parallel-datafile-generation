@@ -34,11 +34,10 @@ int main(int argc, char **argv){
   // for 5000-element double columns, this is 4 MB, (not MiB)
   uint64_t colInc = 100;
   
-  // just read one column at a time (assume column-major)
   struct timeval tStart, tEnd;
   gettimeofday(&tStart, 0);
   FILE *file = fopen(argv[1], "r");
-  //cout << "id " << id << " seeking to " << offset << endl;
+  cout << "id " << id << " seeking to " << offset << endl;
   int status = fseeko(file, offset, SEEK_SET);
   if(status){
     perror("fseek");
@@ -51,7 +50,11 @@ int main(int argc, char **argv){
   }
 
   double *array = (double*)malloc(rows * colInc * sizeof(double));
-  //cout << "id " << id << " reading " << colInc << " colums" << endl;
+  if(!array){
+    cout << "malloc error" << endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+  cout << "id " << id << " reading " << colInc << " colums at a time" << endl;
   for(uint64_t col = colStart; col < colEnd; col += colInc){
     size_t fstatus = fread(array, sizeof(double), rows * colInc, file);
     if(fstatus != rows * colInc)
