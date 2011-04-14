@@ -8,4 +8,4 @@ read: read.cpp tvUtil.cpp
 	mpic++ -o $@ $^ 
 
 gen: gen.cpp
-	mpic++ -llustreapi -o $@ $^ 
+	mpic++ -o $@ $^ -llustreapi

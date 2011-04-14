@@ -5,7 +5,9 @@
 #include <iostream>
 #include <fstream>
 #include <fcntl.h>
+extern "C"{
 #include <lustre/liblustreapi.h>
+}
 #include <mpi.h>
 
 /*! @todo pad created matrix file by system page size. 
