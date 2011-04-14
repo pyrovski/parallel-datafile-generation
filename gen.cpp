@@ -19,6 +19,8 @@ extern "C"{
 using namespace std;
 int main(int argc, char **argv){
   int status;
+  uint64_t readSize = 32 * 1024 * 1024;
+  uint64_t readLength = readSize / sizeof(double);
   MPI_Init(&argc, &argv);
 
   uint64_t rows = 0, cols = 0;
@@ -33,11 +35,20 @@ int main(int argc, char **argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
+  status = unlink(argv[3]);
+  if(status){
+    perror("unlink");
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  #ifdef haveLustre
   status = llapi_file_create(argv[3], 
-			     (int)(32 * 1024 * 1024) / (int)getpagesize(),
+			     (readSize / getpagesize()) * 
+			     getpagesize(),
 			     -1,
 			     0,
 			     0);
+  #endif
 
   file = fopen(argv[3], "w");
   if(!file){
@@ -57,11 +68,9 @@ int main(int argc, char **argv){
 
   rows = atoi(argv[1]);
   cols = atoi(argv[2]);
-  uint64_t myCols = cols / numProcs;
-  uint64_t colStart = id * myCols;
-  uint64_t colEnd = colStart + myCols;
-  uint64_t offset = colStart * rows * sizeof(double);
-  uint64_t colInc = 100;
+  uint64_t totalSize = rows * cols * sizeof(double);
+  uint64_t mySize = totalSize / numProcs;
+  uint64_t offset = mySize * id;
   //cout << "seeking to " << offset << endl;
 
   status = fseeko(file, offset, SEEK_SET);
@@ -74,20 +83,21 @@ int main(int argc, char **argv){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  cout << "id " << id << " writing " << myCols << " cols." << endl;
+  cout << "id " << id << " writing " << readLength << " elements" << endl;
 
   // assume column-major
-  double *array = (double*)malloc(rows * colInc * sizeof(double));
+  double *array = (double*)malloc(readSize);
   if(!array){
     cout << "malloc error" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  for(uint64_t col = colStart; col < colEnd; col += colInc){
-    for(uint64_t colSub = 0; colSub < colInc; colSub++)
-      for(uint64_t row = 0; row < rows; row++)
-	array[row + colSub * rows] = drand48();
-    fwrite(array, sizeof(double), rows * colInc, file);
+  uint64_t left = mySize;
+  while(left){
+    for(uint64_t index = 0; index < readLength; index++)
+      array[index] = drand48();
+    fwrite(array, sizeof(double), readLength, file);
+    left -= min(readSize, left);
   }
   fsync(fileno(file));
   fclose(file);
