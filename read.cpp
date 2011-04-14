@@ -15,6 +15,7 @@ double MBPS(uint64_t long bytes, double seconds){
 }
 
 int main(int argc, char **argv){
+  uint64_t readSize = 32 * 1024 * 1024;
   MPI_Init(&argc, &argv);
   if(argc < 2){
     cout << "usage: " << argv[0] << " <input file> <rows> <colums>" << endl;
