@@ -89,7 +89,7 @@ int main(int argc, char **argv){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  cout << "id " << id << " writing " << readLength << " elements" << endl;
+  cout << "id " << id << " writing " << readLength << " elements at a time" << endl;
 
   // assume column-major
   double *array = (double*)malloc(readSize);
