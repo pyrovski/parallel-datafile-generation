@@ -31,6 +31,7 @@ int main(int argc, char **argv){
   uint64_t cols = atoi(argv[3]);
   uint64_t totalSize = rows * cols * sizeof(double);
   uint64_t mySize = totalSize / numProcs;
+  uint64_t myLength = mySize / sizeof(double);
   uint64_t offset = mySize * id;
   
   struct timeval tStart, tEnd;
@@ -57,7 +58,7 @@ int main(int argc, char **argv){
   cout << "id " << id << " reading " << readLength << " elements at a time" << endl;
   uint64_t left = mySize;
   while(left){
-    size_t fstatus = fread(array, sizeof(double), readLength, file);
+    size_t fstatus = fread(array, sizeof(double), min(readLength, myLength), file);
     if(fstatus != readLength)
     {
       cout << "read failed on id " << id << endl;
