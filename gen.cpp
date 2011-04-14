@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <fcntl.h>
+#include <errno.h>
 extern "C"{
 #include <lustre/liblustreapi.h>
 }
@@ -36,7 +37,7 @@ int main(int argc, char **argv){
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
   status = unlink(argv[3]);
-  if(status){
+  if(status && errno != ENOENT){
     perror("unlink");
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
