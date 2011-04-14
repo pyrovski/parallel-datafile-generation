@@ -33,11 +33,25 @@ int main(int argc, char **argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
-  status = llapi_file_create(argv[3], 
-			     (int)(32 * 1024 * 1024) / (int)getpagesize(),
-			     -1,
-			     0,
-			     0);
+  #ifdef haveLustre
+  if(!id){
+    status = unlink(argv[3]);
+    if(status && errno != ENOENT){
+      perror("unlink");
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    sync();
+
+    status = llapi_file_create(argv[3], 
+  			       (readSize / getpagesize()) * 
+  			       getpagesize(),
+  			       -1,
+  			       0,
+  			       0);
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+  #endif
 
   file = fopen(argv[3], "w");
   if(!file){
