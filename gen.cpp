@@ -89,6 +89,10 @@ int main(int argc, char **argv){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
+#ifndef _SPEED
+#warning generating a nonuniform distribution, inducing slowness
+  cout << "generating a nonuniform distribution, inducing slowness" << endl;
+#endif
   cout << "id " << id << " writing " << readLength << " elements at a time" << endl;
 
   // assume column-major
@@ -100,8 +104,17 @@ int main(int argc, char **argv){
 
   uint64_t left = mySize;
   while(left){
-    for(uint64_t index = 0; index < readLength; index++)
+    for(uint64_t index = 0; index < readLength; index++){
       array[index] = drand48();
+#ifndef _SPEED
+      if(array[index] < .4249)
+	array[index] = 2;
+      else if(array[index] < .4249 + .0329)
+	array[index] = 1;
+      else if(array[index] < .4249 + .0329 + .459)
+	array[index] = 0;
+#endif
+    }
     fwrite(array, sizeof(double), readLength, file);
     left -= min(readSize, left);
   }
