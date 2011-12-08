@@ -16,7 +16,7 @@ double MBPS(uint64_t long bytes, double seconds){
 
 int main(int argc, char **argv){
   uint64_t readSize = 32 * 1024 * 1024;
-  uint64_t readLength = readSize / sizeof(double);
+  uint64_t readLength = readSize / sizeof(float);
   MPI_Init(&argc, &argv);
   if(argc < 2){
     cout << "usage: " << argv[0] << " <input file> <rows> <colums>" << endl;
@@ -29,9 +29,9 @@ int main(int argc, char **argv){
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
   uint64_t rows = atoi(argv[2]);
   uint64_t cols = atoi(argv[3]);
-  uint64_t totalSize = rows * cols * sizeof(double);
+  uint64_t totalSize = rows * cols * sizeof(float);
   uint64_t mySize = totalSize / numProcs;
-  uint64_t myLength = mySize / sizeof(double);
+  uint64_t myLength = mySize / sizeof(float);
   uint64_t offset = mySize * id;
   
   struct timeval tStart, tEnd;
@@ -49,7 +49,7 @@ int main(int argc, char **argv){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  double *array = (double*)malloc(readSize);
+  float *array = (float*)malloc(readSize);
   if(!array){
     cout << "malloc error" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -58,7 +58,7 @@ int main(int argc, char **argv){
   cout << "id " << id << " reading " << readLength << " elements at a time" << endl;
   uint64_t left = mySize;
   while(left){
-    size_t fstatus = fread(array, sizeof(double), min(readLength, myLength), file);
+    size_t fstatus = fread(array, sizeof(float), min(readLength, myLength), file);
     if(fstatus != readLength)
     {
       cout << "read failed on id " << id << endl;

@@ -21,7 +21,7 @@ using namespace std;
 int main(int argc, char **argv){
   int status;
   uint64_t readSize = 32 * 1024 * 1024;
-  uint64_t readLength = readSize / sizeof(double);
+  uint64_t readLength = readSize / sizeof(float);
   MPI_Init(&argc, &argv);
 
   uint64_t rows = 0, cols = 0;
@@ -61,7 +61,7 @@ int main(int argc, char **argv){
     perror("open");
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
-  if(ftruncate(fileno(file), rows * cols * sizeof(double))){
+  if(ftruncate(fileno(file), rows * cols * sizeof(float))){
     perror("ftruncate");
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
@@ -74,7 +74,7 @@ int main(int argc, char **argv){
 
   rows = atoi(argv[1]);
   cols = atoi(argv[2]);
-  uint64_t totalSize = rows * cols * sizeof(double);
+  uint64_t totalSize = rows * cols * sizeof(float);
   uint64_t mySize = totalSize / numProcs;
   uint64_t offset = mySize * id;
   //cout << "seeking to " << offset << endl;
@@ -96,7 +96,7 @@ int main(int argc, char **argv){
   cout << "id " << id << " writing " << readLength << " elements at a time" << endl;
 
   // assume column-major
-  double *array = (double*)malloc(readSize);
+  float *array = (float*)malloc(readSize);
   if(!array){
     cout << "malloc error" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -115,7 +115,7 @@ int main(int argc, char **argv){
 	array[index] = 0;
 #endif
     }
-    fwrite(array, sizeof(double), readLength, file);
+    fwrite(array, sizeof(float), readLength, file);
     left -= min(readSize, left);
   }
   fsync(fileno(file));
