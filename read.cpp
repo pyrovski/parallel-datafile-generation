@@ -10,7 +10,7 @@
 
 using namespace std;
 
-double MBPS(uint64_t long bytes, double seconds){
+double MBPS(uint64_t bytes, double seconds){
   return bytes / 1024.0 / 1024.0 / seconds;
 }
 

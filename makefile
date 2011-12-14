@@ -6,7 +6,7 @@ clean:
 	rm -f *.~ $(targets) *.o
 
 read: read.cpp tvUtil.cpp
-	mpic++ -o $@ $^ $(flags)
+	mpicxx -o $@ $^ $(flags)
 
 gen: gen.cpp
-	mpic++ -o $@ $^ -llustreapi $(flags)
+	mpicxx -o $@ $^ -llustreapi $(flags)
