@@ -129,7 +129,7 @@ int main(int argc, char **argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
   MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
-  while((option = getopt(argc, argv, "fd:r:c:o:")) != -1){
+  while((option = getopt(argc, argv, "fdr:c:o:")) != -1){
     switch(option){
     case 'r':
       rows = strtoull(optarg, 0, 0);
