@@ -1,6 +1,10 @@
 targets=gen read
 flags=-O3
 
+ifeq ($(dbg),1)
+flags=-g -O0
+endif
+
 # build with "make lustre=1" to use lustre
 ifeq ($(lustre),1)
 flags+= -llustreapi -DhaveLustre

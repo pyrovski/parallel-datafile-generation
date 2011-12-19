@@ -6,6 +6,7 @@
 #include <fstream>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdlib.h>
 #ifdef haveLustre
 extern "C"{
 #include <lustre/liblustreapi.h>
@@ -20,61 +21,14 @@ extern "C"{
 //int llapi_file_create(char *name, long stripe_size, int stripe_offset, int stripe_count, int stripe_pattern);
 
 using namespace std;
+int id, numProcs;
 
-template <class T> int gen(int argc, char ** argv, const char *typename){
+
+template <class T> int gen(FILE *file, uint64_t rows, uint64_t cols, const char *typeName){
   //! @todo get output filename and dimensions from command line with getopt
 
   int status;
-  uint64_t readSize = 32 * 1024 * 1024;
-  //This is the "count" in fwrite, number of elements to be written-- same for float and double dataset
-  uint64_t readLength = readSize / sizeof(double);
-  MPI_Init(&argc, &argv);
 
-  uint64_t rows = 0, cols = 0;
-  FILE *file;
-  
-  if(argc < 4){
-    cout << "usage: " << argv[0] << " <rows> <columns> <output file>" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
-  
-  int id, numProcs;
-  MPI_Comm_rank(MPI_COMM_WORLD, &id);
-  MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
-
-#ifdef haveLustre
-  if(!id){
-    status = unlink(argv[3]);
-    if(status && errno != ENOENT){
-      perror("unlink");
-      MPI_Abort(MPI_COMM_WORLD, 1);
-    }
-
-    sync();
-
-    status = llapi_file_create(argv[3], 
-  			       (readSize / getpagesize()) * 
-  			       getpagesize(),
-  			       -1,
-  			       0,
-  			       0);
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-#endif
-
-  char *str;
-  str = (char*) malloc(256 * sizeof(char));
-
-  sprintf(filename,"%s.%s", argv[3], typename);
-
-  file = fopen(filename, "w");
-  
-
-
-  if(!file){
-    perror("open");
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
   if(ftruncate(fileno(file), rows * cols * sizeof(T))){
     perror("ftruncate");
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -86,10 +40,11 @@ template <class T> int gen(int argc, char ** argv, const char *typename){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  rows = atoi(argv[1]);
-  cols = atoi(argv[2]);
+  uint64_t readSize = 32 * 1024 * 1024;
+  //This is the "count" in fwrite, number of elements to be written-- same for float and double dataset
+  uint64_t readLength = readSize / sizeof(T);
 
-  uint64_t totalSize = rows * cols * sizeof(double);
+  uint64_t totalSize = rows * cols * sizeof(T);
   uint64_t mySize = totalSize / numProcs;
   uint64_t offset = mySize * id;
   //cout << "seeking to " << offset << endl;
@@ -105,13 +60,12 @@ template <class T> int gen(int argc, char ** argv, const char *typename){
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-
-
 #ifndef _SPEED
 #warning generating a nonuniform distribution, inducing slowness
   cout << "generating a nonuniform distribution, inducing slowness" << endl;
 #endif
-  cout << "id " << id << " writing " << readLength << " double elements and float elements at a time" << endl;
+  cout << "id " << id << " writing " << readLength << " " << typeName 
+       << " elements at a time" << endl;
 
   // assume column-major
   T *array = (T*)malloc(readSize);
@@ -121,10 +75,11 @@ template <class T> int gen(int argc, char ** argv, const char *typename){
   }
 
   //! @todo set seed from argument
+  srand48(0);
 
-  uint64_t left = mySize;
+  uint64_t left = mySize/sizeof(T);
   while(left){
-    for(uint64_t index = 0; index < readLength; index++){
+    for(uint64_t index = 0; index < min(readLength, left); index++){
       array[index] = drand48();
 
 #ifndef _SPEED
@@ -140,9 +95,9 @@ template <class T> int gen(int argc, char ** argv, const char *typename){
 #endif
     }
     //Write out to both the files  
-    fwrite(array, sizeof(double), readLength, file);
+    fwrite(array, sizeof(T), min(readLength, left), file);
     
-    left -= min(readSize, left);
+    left -= min(readLength, left);
   }
   
   fsync(fileno(file));
@@ -155,10 +110,25 @@ template <class T> int gen(int argc, char ** argv, const char *typename){
 }
 int main(int argc, char **argv){
   
-  int status, option, type = 'd';
+  int  option, type = 'd';
+  uint64_t rows = 0, cols = 0;
+  char argFilename[256];
+  FILE *file;
 
-  while((status = getopt(argc, argv, "fds:")) != -1){
+  char filename[256];
+
+  while((option = getopt(argc, argv, "fd:r:c:o:")) != -1){
     switch(option){
+    case 'r':
+      rows = strtoull(optarg, 0, 0);
+      break;
+    case 'c':
+      cols = strtoull(optarg, 0, 0);
+      break;
+    case 'o':
+      strncpy(argFilename, optarg, 256);
+      argFilename[255] = 0;
+      break;
     case 'f':
       type = 'f';
       break;
@@ -167,21 +137,69 @@ int main(int argc, char **argv){
       break;
     default:
       cerr << "invalid option" << endl;
+      cerr << "usage: " << argv[0] << "[-f (single) or -d (double)] -r <rows> -c <columns> -o <output file>" 
+	   << endl;
       return -1;
     }
   }
   
-  cout << "selected ";
-  
   switch(type){
   case 'f':
-    cout << "float type" << endl;
-    return gen<float>(argc, argv);
+    sprintf(filename,"%s.%s", argFilename, "float");
+    break;
   case 'd':
-    cout << "double type" << endl;
-    return gen<double>(argc, argv);
-  default:
-    cerr << "invalid type specifier: " << type << endl;
-    return -1;
+    sprintf(filename,"%s.%s", argFilename, "double");
+    break;
+  }
+    
+  MPI_Init(&argc, &argv);
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
+
+
+#ifdef haveLustre
+  if(!id){
+#error fixme
+    status = unlink(filename);
+    if(status && errno != ENOENT){
+      perror("unlink");
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
+    sync();
+
+    status = llapi_file_create(filename, 
+  			       (readSize / getpagesize()) * 
+  			       getpagesize(),
+  			       -1,
+  			       0,
+  			       0);
+
+  }
+  MPI_Barrier(MPI_COMM_WORLD);
+#endif
+
+  file = fopen(filename, "w");
+
+  if(!file){
+    perror("open");
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
+  if(!id){
+    cout << "selected ";
+    
+    switch(type){
+    case 'f':
+      cout << "float type" << endl;
+      return gen<float>(file, rows, cols, "float");
+    case 'd':
+      cout << "double type" << endl;
+      return gen<double>(file, rows, cols, "double");
+    default:
+      cerr << "invalid type specifier: " << type << endl;
+      return -1;
+    }
   }
 }
