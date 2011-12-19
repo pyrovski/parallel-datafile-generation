@@ -108,14 +108,26 @@ template <class T> int gen(FILE *file, uint64_t rows, uint64_t cols, const char 
   return 0;
 
 }
+
+void usage(char **argv){
+      cerr << "usage: " << argv[0] 
+	   << "[-f (single) or -d (double)] -r <rows> -c <columns> -o <output file>" 
+	   << endl;
+
+}
 int main(int argc, char **argv){
   
   int  option, type = 'd';
   uint64_t rows = 0, cols = 0;
-  char argFilename[256];
+  char argFilename[256] = "";
   FILE *file;
 
   char filename[256];
+
+  MPI_Init(&argc, &argv);
+  
+  MPI_Comm_rank(MPI_COMM_WORLD, &id);
+  MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
 
   while((option = getopt(argc, argv, "fd:r:c:o:")) != -1){
     switch(option){
@@ -137,12 +149,16 @@ int main(int argc, char **argv){
       break;
     default:
       cerr << "invalid option" << endl;
-      cerr << "usage: " << argv[0] << "[-f (single) or -d (double)] -r <rows> -c <columns> -o <output file>" 
-	   << endl;
-      return -1;
+      usage(argv);
+      MPI_Abort(MPI_COMM_WORLD, 1);
     }
   }
-  
+
+  if(!rows || !cols || !argFilename){
+    usage(argv);
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
   switch(type){
   case 'f':
     sprintf(filename,"%s.%s", argFilename, "float");
@@ -152,11 +168,6 @@ int main(int argc, char **argv){
     break;
   }
     
-  MPI_Init(&argc, &argv);
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &id);
-  MPI_Comm_size(MPI_COMM_WORLD, &numProcs);
-
 
 #ifdef haveLustre
   if(!id){
