@@ -120,10 +120,9 @@ int main(int argc, char **argv){
   
   int  option, type = 'd';
   uint64_t rows = 0, cols = 0;
-  char argFilename[256] = "";
   FILE *file;
 
-  char filename[256];
+  char filename[256] = "";
 
   MPI_Init(&argc, &argv);
   
@@ -139,8 +138,8 @@ int main(int argc, char **argv){
       cols = strtoull(optarg, 0, 0);
       break;
     case 'o':
-      strncpy(argFilename, optarg, 256);
-      argFilename[255] = 0;
+      strncpy(filename, optarg, 256);
+      filename[255] = 0;
       break;
     case 'f':
       type = 'f';
@@ -155,20 +154,11 @@ int main(int argc, char **argv){
     }
   }
 
-  if(!rows || !cols || !argFilename){
+  if(!rows || !cols ||  !filename[0]){
     usage(argv);
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  switch(type){
-  case 'f':
-    sprintf(filename,"%s.%s", argFilename, "float");
-    break;
-  case 'd':
-    sprintf(filename,"%s.%s", argFilename, "double");
-    break;
-  }
-    
 
 #ifdef haveLustre
   if(!id){
